@@ -1,4 +1,4 @@
-name: CI
+name: CI file
 
 on:
   pull_request:
