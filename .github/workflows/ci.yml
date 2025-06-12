@@ -1,4 +1,4 @@
-name: CI file
+name: CI
 
 on:
   pull_request:
@@ -20,7 +20,7 @@ jobs:
         uses: actions/setup-java@v3 
         with:
           distribution: temurin
-          java-version: '17'   # Лучше указать в кавычках
+          java-version: '17'
 
       - name: Cache Gradle dependencies
         uses: actions/cache@v3              
