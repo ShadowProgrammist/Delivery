@@ -6,7 +6,8 @@ on:
       - main        
   push:
     branches:
-      - dev         
+      - dev       
+      - main
 
 jobs:
   build-and-test:
