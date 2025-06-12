@@ -3,7 +3,7 @@ name: CD Pipeline - Build and Publish
 on:
   push:
     branches:
-      - main
+      - master
 
 permissions:
   contents: read
