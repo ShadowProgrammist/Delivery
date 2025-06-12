@@ -23,8 +23,8 @@ jobs:
           java-version: 17
 
       - name: Cache Gradle dependencies
-        uses: actions/cache@v3              
-	with:
+        uses: actions/cache@v3
+        with:                           # <-- здесь должен быть отдельный уровень отступа
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper/
