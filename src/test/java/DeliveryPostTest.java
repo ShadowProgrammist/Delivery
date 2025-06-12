@@ -1,19 +1,19 @@
-//import static org.junit.jupiter.api.Assertions.*;
-//import org.junit.jupiter.api.*;
-//
-//import java.util.List;
-//
-//public class DeliveryPostTest {
-//
-//    private PaymentServer server;
-//
-//    // Этот метод будет выполняться перед каждым тестом,
-//    // создавая новый экземпляр PaymentServer для чистоты тестов
-//    @BeforeEach
-//    public void setUp() {
-//        server = new PaymentServer();
-//    }
-//
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.*;
+
+import java.util.List;
+
+public class DeliveryPostTest {
+
+    private PaymentServer server;
+
+    // Этот метод будет выполняться перед каждым тестом,
+    // создавая новый экземпляр PaymentServer для чистоты тестов
+    @BeforeEach
+    public void setUp() {
+        server = new PaymentServer();
+    }
+}
 //    // Проверяем корректность метода isValid для всех валидных и невалидных платежных систем
 //    @Test
 //    public void testValidPaymentSystems() {
