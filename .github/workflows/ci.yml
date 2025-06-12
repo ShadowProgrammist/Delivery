@@ -1,30 +1,38 @@
-name: CI Pipeline - Build and Test
+name: CI
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
-      - main
+      - main        
+  push:
+    branches:
+      - dev         
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build-and-test:
+    runs-on: ubuntu-latest   
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3   
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v3 
         with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: gradle
+          distribution: temurin
+          java-version: 17
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x ./gradlew
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v3              with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper/
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
-      - name: Build with Gradle
-        run: ./gradlew build --no-daemon
+      - name: Build project
+        run: ./gradlew build        
+
+      - name: Run tests
+        run: ./gradlew test
