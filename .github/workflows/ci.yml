@@ -20,11 +20,10 @@ jobs:
         uses: actions/setup-java@v3 
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: 17
 
       - name: Cache Gradle dependencies
-        uses: actions/cache@v3              
-        with:
+        uses: actions/cache@v3              with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper/
