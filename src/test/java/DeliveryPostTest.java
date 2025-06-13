@@ -1,172 +1,82 @@
-import java.time.LocalDateTime;
-import java.util.*;
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.*;
 
-class PaymentSystem {
-    public static final String SBERPAY = "SberPay";
-    public static final String MIRPAY = "Mir Pay";
-    public static final String APPLEPAY = "Apple Pay";
+import java.util.List;
 
-    public static boolean isValid(String system) {
-        return SBERPAY.equals(system) || MIRPAY.equals(system) || APPLEPAY.equals(system);
-    }
-}
+public class DeliveryPostTest {
 
-class Payment {
-    private static int idCounter = 1;
+    private PaymentServer server;
 
-    private final int paymentId;
-    private final String paymentSystem;
-    private final double baseAmount;
-    private final boolean expressDelivery;
-    private final double weightKg;
-    private final double distanceKm;
-    private final LocalDateTime timestamp;
-    private boolean refunded;
-    private double finalAmount;
-
-    public Payment(String paymentSystem, double baseAmount, boolean expressDelivery, double weightKg, double distanceKm) {
-        if (!PaymentSystem.isValid(paymentSystem)) {
-            throw new IllegalArgumentException("Неверная платежная система: " + paymentSystem);
-        }
-        this.paymentId = idCounter++;
-        this.paymentSystem = paymentSystem;
-        this.baseAmount = baseAmount;
-        this.expressDelivery = expressDelivery;
-        this.weightKg = weightKg;
-        this.distanceKm = distanceKm;
-        this.timestamp = LocalDateTime.now();
-        this.refunded = false;
-        this.finalAmount = calculateFinalAmount();
+    @BeforeEach
+    public void setUp() {
+        server = new PaymentServer();
     }
 
-    private double calculateFinalAmount() {
-        double amount = baseAmount;
-
-        if (PaymentSystem.SBERPAY.equals(paymentSystem)) {
-            amount *= 1.10; // +10%
-        } else if (PaymentSystem.MIRPAY.equals(paymentSystem)) {
-            amount *= 1.15; // +15%
-        } else if (PaymentSystem.APPLEPAY.equals(paymentSystem)) {
-            amount *= 1.35; // +20%
-        }
-        if (expressDelivery) {
-            amount *= 1.40; // +40%
-        }
-        if (weightKg > 10) {
-            amount *= 1.15; // +15%
-        }
-        if (distanceKm > 500) {
-            amount *= 1.12; // +12%
-        }
-
-        return Math.round(amount * 100.0) / 100.0; // округление до 2 знаков
+    @Test
+    public void testValidPaymentSystems() {
+        assertTrue(PaymentSystem.isValid(PaymentSystem.SBERPAY));
+        assertTrue(PaymentSystem.isValid(PaymentSystem.MIRPAY));
+        assertTrue(PaymentSystem.isValid(PaymentSystem.APPLEPAY));
+        assertFalse(PaymentSystem.isValid("InvalidPay"));
     }
 
-    public int getPaymentId() {
-        return paymentId;
+    @Test
+    public void testCalculateCostNoModifiers() {
+        double base = 1000;
+        double cost = server.calculateCost(PaymentSystem.SBERPAY, base, false, 5, 100);
+        assertEquals(1100.00, cost);
     }
 
-    public String getPaymentSystem() {
-        return paymentSystem;
+    @Test
+    public void testCalculateCostAllModifiers() {
+        double base = 1000;
+        double expected = 1000 * 1.10 * 1.40 * 1.15 * 1.12;
+        expected = Math.round(expected * 100.0) / 100.0;
+        double cost = server.calculateCost(PaymentSystem.SBERPAY, base, true, 15, 600);
+        assertEquals(expected, cost);
     }
 
-    public double getBaseAmount() {
-        return baseAmount;
+    @Test
+    public void testProcessPaymentAndHistory() {
+        double base = 1500;
+        Payment p = server.processPayment(PaymentSystem.MIRPAY, base, true, 12, 700);
+
+        assertNotNull(p);
+        assertEquals(PaymentSystem.MIRPAY, p.getPaymentSystem());
+        assertTrue(p.isExpressDelivery());
+        assertEquals(12, p.getWeightKg());
+        assertEquals(700, p.getDistanceKm());
+
+        double expectedFinal = server.calculateCost(PaymentSystem.MIRPAY, base, true, 12, 700);
+        assertEquals(expectedFinal, p.getFinalAmount());
+
+        List<Payment> history = server.getPaymentHistory();
+        assertEquals(1, history.size());
+        assertEquals(p, history.get(0));
     }
 
-    public boolean isExpressDelivery() {
-        return expressDelivery;
+    @Test
+    public void testRefundPayment() {
+        Payment p = server.processPayment(PaymentSystem.SBERPAY, 1000, false, 5, 100);
+        assertFalse(p.isRefunded());
+
+        server.refundPayment(p.getPaymentId());
+        assertTrue(p.isRefunded());
+
+        server.refundPayment(p.getPaymentId());
+        assertTrue(p.isRefunded());
     }
 
-    public double getWeightKg() {
-        return weightKg;
-    }
+    @Test
+    public void testPaymentInvalidSystem() {
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
+            server.calculateCost("123", 1000, false, 5, 100);
+        });
+        assertTrue(thrown.getMessage().contains("Неверная платежная система"));
 
-    public double getDistanceKm() {
-        return distanceKm;
-    }
-
-    public LocalDateTime getTimestamp() {
-        return timestamp;
-    }
-
-    public boolean isRefunded() {
-        return refunded;
-    }
-
-    public double getFinalAmount() {
-        return finalAmount;
-    }
-
-    public void refund() {
-        if (!refunded) {
-            refunded = true;
-            System.out.println("Платеж #" + paymentId + " возвращён.");
-        } else {
-            System.out.println("Платеж #" + paymentId + " уже был возвращён.");
-        }
-    }
-
-    @Override
-    public String toString() {
-        return "Payment{" +
-                "id=" + paymentId +
-                ", paymentSystem='" + paymentSystem + '\'' +
-                ", baseAmount=" + baseAmount +
-                ", finalAmount=" + finalAmount +
-                ", expressDelivery=" + expressDelivery +
-                ", weightKg=" + weightKg +
-                ", distanceKm=" + distanceKm +
-                ", timestamp=" + timestamp +
-                ", refunded=" + refunded +
-                '}';
-    }
-}
-
-
-class PaymentServer {
-    private final List<Payment> paymentHistory = new ArrayList<>();
-
-    public double calculateCost(String paymentSystem, double baseAmount, boolean expressDelivery, double weightKg, double distanceKm) {
-        if (!PaymentSystem.isValid(paymentSystem)) {
-            throw new IllegalArgumentException("Неверная платежная система: " + paymentSystem);
-        }
-
-        double amount = baseAmount;
-        if (PaymentSystem.SBERPAY.equals(paymentSystem)) {
-            amount *= 1.10; // +10%
-        } else if (PaymentSystem.MIRPAY.equals(paymentSystem)) {
-            amount *= 1.15; // +15%
-        } else if (PaymentSystem.APPLEPAY.equals(paymentSystem)) {
-            amount *= 1.35; // +20%
-        }
-        if (expressDelivery) {
-            amount *= 1.40; // +40%
-        }
-        if (weightKg > 10) {
-            amount *= 1.15; // +15%
-        }
-        if (distanceKm > 500) {
-            amount *= 1.12; // +12%
-        }
-        return Math.round(amount * 100.0) / 100.0;
-    }
-
-    public Payment processPayment(String paymentSystem, double baseAmount, boolean expressDelivery, double weightKg, double distanceKm) {
-        Payment payment = new Payment(paymentSystem, baseAmount, expressDelivery, weightKg, distanceKm);
-        paymentHistory.add(payment);
-        System.out.println("Платеж обработан: " + payment);
-        return payment;
-    }
-
-    public void refundPayment(int paymentId) {
-        for (Payment payment : paymentHistory) {
-            if (payment.getPaymentId() == paymentId) {
-                payment.refund();
-                return;
-            }
-        }
-        System.out.println("Платеж с ID " + paymentId + " не найден.");
+        assertThrows(IllegalArgumentException.class, () -> {
+            server.processPayment("123", 1000, false, 5, 100);
+        });
     }
 }
 
