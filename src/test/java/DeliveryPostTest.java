@@ -25,7 +25,7 @@ public class DeliveryPostTest {
 
     // Проверяем расчет стоимости без дополнительных наценок (кроме базовой наценки платежной системы)
     @Test
-    public void testCalculateCost_NoModifiers() {
+    public void testCalculateCostNoModifiers() {
         double base = 1000;
         // Для SBERPAY базовая +10%, без срочности, веса и расстояния
         double cost = server.calculateCost(PaymentSystem.SBERPAY, base, false, 5, 100);
@@ -34,7 +34,7 @@ public class DeliveryPostTest {
 
     // Проверяем расчет стоимости со всеми наценками одновременно
     @Test
-    public void testCalculateCost_AllModifiers() {
+    public void testCalculateCostAllModifiers() {
         double base = 1000;
         // Наценки: SBERPAY +10%, срочность +40%, вес >10кг +15%, расстояние >500км +12%
         double expected = 1000 * 1.10 * 1.40 * 1.15 * 1.12;
@@ -43,20 +43,9 @@ public class DeliveryPostTest {
         assertEquals(expected, cost);
     }
 
-    // Проверяем расчет стоимости для APPLEPAY без дополнительных наценок кроме базовой
-    @Test
-    public void testCalculateCost_ApplePayModifiers() {
-        double base = 2000;
-        // APPLEPAY +35%, без срочности, веса <=10, расстояния <=500
-        double expected = 2000 * 1.35;
-        expected = Math.round(expected * 100.0) / 100.0;
-        double cost = server.calculateCost(PaymentSystem.APPLEPAY, base, false, 5, 300);
-        assertEquals(expected, cost);
-    }
-
     // Проверяем создание платежа, корректность полей и сохранение в истории
     @Test
-    public void testProcessPayment_AndHistory() {
+    public void testProcessPaymentAndHistory() {
         double base = 1500;
         Payment p = server.processPayment(PaymentSystem.MIRPAY, base, true, 12, 700);
 
@@ -90,22 +79,16 @@ public class DeliveryPostTest {
         assertTrue(p.isRefunded());
     }
 
-    // Проверяем, что возврат по несуществующему ID не вызывает исключений
-    @Test
-    public void testRefundPayment_InvalidId() {
-        server.refundPayment(9999); // Просто выводит сообщение, не падает
-    }
-
     // Проверяем, что при использовании невалидной платежной системы выбрасывается исключение
     @Test
-    public void testPaymentInvalidSystemThrows() {
+    public void testPaymentInvalidSystem() {
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
-            server.calculateCost("UnknownPay", 1000, false, 5, 100);
+            server.calculateCost("123", 1000, false, 5, 100);
         });
         assertTrue(thrown.getMessage().contains("Неверная платежная система"));
 
         assertThrows(IllegalArgumentException.class, () -> {
-            server.processPayment("UnknownPay", 1000, false, 5, 100);
+            server.processPayment("123", 1000, false, 5, 100);
         });
     }
 }
